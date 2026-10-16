@@ -34,7 +34,7 @@ Only route files go in `src/app/`. Everything database-related goes in `src/db/`
 
 ```bash
 npx expo install @nozbe/watermelondb expo-build-properties
-npm install --save-dev @babel/plugin-proposal-decorators
+
 ```
 
 Then install an Expo config plugin for WatermelonDB. There is no official one. The most recent community plugin is:
@@ -49,21 +49,9 @@ npm install --save-dev @lovesworking/watermelondb-expo-plugin-sdk-52-plus
 
 ## Step 2 — Configure Babel for decorators
 
-WatermelonDB models use decorators (`@field`, `@text`, …). Create **`babel.config.js`** in the project root:
+WatermelonDB models use decorators (`@field`, `@text`, …). **Nothing to do:** `babel-preset-expo` already compiles legacy decorators by default.
 
-```js
-module.exports = function (api) {
-  api.cache(true);
-  return {
-    presets: ['babel-preset-expo'],
-    plugins: [
-      ['@babel/plugin-proposal-decorators', { legacy: true }],
-    ],
-  };
-};
-```
-
-`babel-preset-expo` already handles class properties and the React Compiler. Don't add `@babel/plugin-transform-class-properties` yourself.
+> ⚠️ Do **not** add `@babel/plugin-proposal-decorators` in a `babel.config.js`. The decorators would be applied twice, and you'd get `Definitely assigned fields cannot be initialized here, but only in the constructor`.
 
 ---
 
@@ -589,7 +577,7 @@ Manual test checklist:
 | Problem | Fix |
 |---|---|
 | `Cannot read property 'xxx' of undefined` / native module null | You're in **Expo Go**, or you haven't rebuilt since adding the plugin. Run `npx expo prebuild --clean` and then `run:android/ios`. |
-| Fields are always `undefined` | Decorator config is wrong. Check `babel.config.js` (`legacy: true`), `experimentalDecorators` and `useDefineForClassFields: false`, then restart Metro with `npx expo start -c`. |
+| Fields are always `undefined` | Decorator config is wrong. Make sure no `babel.config.js` adds a second decorators plugin, and check `experimentalDecorators` and `useDefineForClassFields: false`, then restart Metro with `npx expo start -c`. |
 | `Diagnostic error: Cannot create/update/delete outside a Writer` | Wrap the mutation in `database.write(...)` or a `@writer` method. |
 | Android: `More than one file was found with OS independent path 'lib/.../libc++_shared.so'` | The `pickFirst` option in `expo-build-properties` (Step 4) is missing. |
 | iOS build error mentioning `simdjson` | Add `simdjson` as an extra pod through `expo-build-properties` → `ios.extraPods`, following the plugin's README. |
