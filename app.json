@@ -7,9 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "watermelondb",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
+    "ios": {},
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -17,6 +15,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "package": "com.watermelondb",
       "predictiveBackGestureEnabled": false
     },
     "web": {
