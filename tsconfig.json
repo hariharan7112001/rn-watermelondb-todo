@@ -9,7 +9,9 @@
       "@/assets/*": [
         "./assets/*"
       ]
-    }
+    },
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false
   },
   "include": [
     "**/*.ts",

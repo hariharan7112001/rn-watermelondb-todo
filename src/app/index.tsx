@@ -1,98 +1,75 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Button, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Todo, addTodo, deleteTodo, editTodo, toggleTodo, watchTodos } from '@/db';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function Index() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [text, setText] = useState('');
+  const [editing, setEditing] = useState<Todo | null>(null);
+
+  // Keep the list in sync with the database
+  useEffect(() => {
+    const subscription = watchTodos(setTodos);
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const save = async () => {
+    if (!text.trim()) return;
+    if (editing) await editTodo(editing, text.trim());
+    else await addTodo(text.trim());
+    setText('');
+    setEditing(null);
+  };
+
+  const startEdit = (todo: Todo) => {
+    setEditing(todo);
+    setText(todo.title);
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <SafeAreaView style={styles.screen}>
+      <Text style={styles.heading}>My Todos</Text>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+      <View style={styles.row}>
+        <TextInput
+          style={styles.input}
+          placeholder="What do you need to do?"
+          value={text}
+          onChangeText={setText}
+          onSubmitEditing={save}
+        />
+        <Button title={editing ? 'Save' : 'Add'} onPress={save} />
+      </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <FlatList
+        data={todos}
+        keyExtractor={(todo) => todo.id}
+        ListEmptyComponent={<Text style={styles.empty}>Nothing to do 🎉</Text>}
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            <Pressable style={styles.todo} onPress={() => toggleTodo(item)}>
+              <Text style={[styles.title, item.done && styles.done]}>
+                {item.done ? '✅' : '⬜'} {item.title}
+              </Text>
+            </Pressable>
+            <Button title="Edit" onPress={() => startEdit(item)} />
+            <Button title="Delete" color="red" onPress={() => deleteTodo(item)} />
+          </View>
+        )}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  screen: { flex: 1, padding: 16 },
+  heading: { fontSize: 28, fontWeight: 'bold', marginBottom: 16 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  input: { flex: 1, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10 },
+  todo: { flex: 1 },
+  title: { fontSize: 18 },
+  done: { textDecorationLine: 'line-through', color: 'gray' },
+  empty: { textAlign: 'center', color: 'gray', marginTop: 40 },
 });
